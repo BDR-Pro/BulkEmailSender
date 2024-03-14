@@ -6,6 +6,10 @@ from email import encoders
 import csv
 import os
 from dotenv import load_dotenv
+import sys
+from getpass import getpass
+import argparse
+import json
 
 # Load environment variables
 load_dotenv()
@@ -14,59 +18,111 @@ sender_password = os.getenv("SENDER_PASSWORD")
 smtp_server = "smtp.gmail.com"
 port = 465
 
+def print_help():
+    print(
+
+    """
+    /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\ 
+    ( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )
+    > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ < 
+    /\_/\   __  __       _ _   ____                 _              /\_/\ 
+    ( o.o ) |  \/  | __ _(_) | / ___|  ___ _ __   __| | ___ _ __   ( o.o )
+    > ^ <  | |\/| |/ _` | | | \___ \ / _ \ '_ \ / _` |/ _ \ '__|   > ^ < 
+    /\_/\  | |  | | (_| | | |  ___) |  __/ | | | (_| |  __/ |      /\_/\ 
+    ( o.o ) |_|  |_|\__,_|_|_| |____/ \___|_| |_|\__,_|\___|_|     ( o.o )
+    > ^ <                                                          > ^ < 
+    /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\ 
+    ( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )
+    > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ <  > ^ < 
+    """
+
+    )
+    print("""Welcome to the Email Sender App!
+
+Usage:
+    python bulksender.py [command] <arguments>
+
+Commands:
+    send    - Execute the send function of the app.
+    login   - Perform login operation.
+
+Arguments for 'send':
+    -e <path to email CSV file>
+    -m <path to message JSON file>
+    -a <path to attachment>
+
+Examples:
+    python bulksender.py send -e template.csv -m template_message.json -a cv.pdf
+    python bulksender.py login abcd@gmail.com
+""")
+
 def send_email(recipient_email, subject, body, filename):
-    # Create a multipart message
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = recipient_email
     message["Subject"] = subject
 
-    # Add body to email
     message.attach(MIMEText(body, "plain"))
 
-    # Attach a file to the message
-    with open(filename, "rb") as attachment:
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(attachment.read())
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f"attachment; filename={filename}")
-        message.attach(part)
+    if filename:
+        with open(filename, "rb") as attachment:
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(attachment.read())
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", f"attachment; filename={os.path.basename(filename)}")
+            message.attach(part)
 
-    # Connect to the server and send the email
     with smtplib.SMTP_SSL(smtp_server, port) as server:
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, recipient_email, message.as_string())
         print(f"Email sent to {recipient_email}")
 
-def main():
-    input_file = "emails.csv"
-    subject = "Application for Machine Learning and AI Developer Position - Bader Alotaibi"
-    body = '''
-    Dear Hiring Manager,
-
-    I hope this email finds you well. My name is Bader Alotaibi, and I am reaching out to express my interest in the Machine Learning and AI Developer position within your esteemed organization.
-
-    With a strong foundation in Python, Django, and TensorFlow, coupled with hands-on experience in Rust and machine learning projects, I am well-equipped to contribute effectively to your team. My passion for AI and machine learning, along with my dedication to continuous learning and improvement, drive me to apply the latest techniques and frameworks to solve complex problems.
-
-    You can find samples of my work and projects on my GitHub page: github.com/bdr-pro. I believe these will provide a clear insight into my capabilities and the value I can bring to your team.
-
-    I am enthusiastic about the opportunity to discuss how my education, experience, and skills could be beneficial to your team. I am looking forward to the possibility of contributing to your projects and to the further development of your technology.
-
-    Thank you for considering my application. I am eager to potentially discuss this exciting opportunity with you.
-
-    Warm regards,
-    Bader Alotaibi
- 
-    
-    
-    '''
-    filename = "cv.pdf"
-
-    with open(input_file, 'r') as file:
+def send(emails_file, message_file, attachment):
+    with open(message_file, 'r') as file:
+        message_data = json.load(file)
+        subject = message_data["subject"]
+        body = message_data["body"]
+        print(f"Subject: {subject}")
+        print(f"Body: {body}")
+        print(f"Attachment: {attachment}")
+        print("Sending emails, please wait...")
+    with open(emails_file, 'r') as file:
         reader = csv.reader(file)
-        for i, row in enumerate(reader, start=1):
-            send_email(row[0], subject, body, filename)
-            print(f"{i} - {row[0]}")
+        for i, row in enumerate(reader):
+            send_email(row[0], subject, body, attachment)
+            print(f"Email sent to {row[0]}")
+
+def login(email):
+    password = getpass("Enter your password: ")
+    with open(".env", "w") as file:
+        file.write(f"SENDER_EMAIL={email}\nSENDER_PASSWORD={password}\n")
+    print("Login details saved. You can now use the 'send' command.")
+
+def main():
+    parser = argparse.ArgumentParser(description="Bulk Email Sender App")
+    parser.add_argument("command", help="Command to execute")
+    parser.add_argument("-e", "--emails", help="Path to the email CSV file")
+    parser.add_argument("-m", "--message", help="Path to the message JSON file")
+    parser.add_argument("-a", "--attachment", help="File path of the attachment")
+    args = parser.parse_args()
+
+    if args.command == "send":
+        if not all([args.emails, args.message]):
+            print("Both -e (emails CSV) and -m (message JSON) are required for the 'send' command.")
+            sys.exit(1)
+        print("Processing emails, please wait...")
+        send(args.emails, args.message, args.attachment)
+    elif args.command == "login":
+        if len(sys.argv) < 3:
+            print("Email address is required for the 'login' command.")
+            sys.exit(1)
+        login(sys.argv[2])
+    else:
+        print(f"Unknown command: {args.command}")
+        print_help()
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 1:
+        print_help()
+    else:
+        main()

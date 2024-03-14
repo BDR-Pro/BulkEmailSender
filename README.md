@@ -105,6 +105,8 @@ Examples:
 
 ```
 
+![alt text](email.gif)
+
 ## Contributing 🤝
 
 Contributions are welcome! Feel free to fork the project, make improvements, and submit pull requests. If you encounter issues or have suggestions, don't hesitate to open an issue on GitHub.

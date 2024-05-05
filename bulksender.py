@@ -56,6 +56,10 @@ Examples:
     python bulksender.py login abcd@gmail.com
 """)
 
+def count_lines(file):
+    with open(file, "r") as f:
+        return sum(1 for line in f)
+    
 def send_email(recipient_email, subject, body, filename):
     message = MIMEMultipart()
     message["From"] = sender_email
@@ -91,6 +95,10 @@ def send(emails_file, message_file, attachment):
         for i, row in enumerate(reader):
             send_email(row[0], subject, body, attachment)
             print(f"Email sent to {row[0]}")
+    print("All emails sent successfully.")
+    print("Thank you for using the Email Sender App!")
+    #print number of emails sent
+    print(f"Total emails sent: {count_lines(emails_file)}")
 
 def login(email):
     password = getpass("Enter your password: ")
@@ -126,3 +134,5 @@ if __name__ == "__main__":
         print_help()
     else:
         main()
+
+

@@ -79,7 +79,7 @@ def send_email(recipient_email, subject, body, filename):
     with smtplib.SMTP_SSL(smtp_server, port) as server:
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, recipient_email, message.as_string())
-        print(f"Email sent to {recipient_email}")
+        #print(f"Email sent to {recipient_email}")
 
 def send(emails_file, message_file, attachment):
     with open(message_file, 'r') as file:
